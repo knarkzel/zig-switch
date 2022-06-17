@@ -21,13 +21,14 @@ pub fn build(b: *std.build.Builder) void {
     const elf = b.addSystemCommand(
         &.{
             devkitpro ++ "/devkitA64/bin/aarch64-none-elf-gcc",
-            "zig-out/zig-switch.o",
+            "-specs=" ++ devkitpro ++ "/libnx/switch.specs",
             "-g",
             "-march=armv8-a+crc+crypto",
             "-mtune=cortex-a57",
             "-mtp=soft",
             "-fPIE",
             "-Wl,-Map,zig-out/zig-switch.map",
+            "zig-out/zig-switch.o",
             "-L" ++ devkitpro ++ "/libnx/lib",
             "-lnx",
             "-o",
@@ -35,6 +36,15 @@ pub fn build(b: *std.build.Builder) void {
         },
     );
 
-    b.default_step.dependOn(&elf.step);
+    const nro = b.addSystemCommand(
+        &.{
+            devkitpro ++ "/tools/bin/elf2nro",
+            "zig-out/zig-switch.elf",
+            "zig-out/zig-switch.nro",
+        },
+    );
+
+    b.default_step.dependOn(&nro.step);
+    nro.step.dependOn(&elf.step);
     elf.step.dependOn(&obj.step);
 }
